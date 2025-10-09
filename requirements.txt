@@ -1,6 +1,10 @@
 # pip install -r requirements.txt
 
-openpyxl
-sounddevice
-vosk
-langchain-ollama
+openpyxl==3.1.3             # para manipular arquivos Excel
+webbrowser                   # padrão do Python, não precisa instalar
+sounddevice==0.4.9           # captura de áudio
+SpeechRecognition==3.9.0     # reconhecimento de voz
+langchain==0.1.7             # LLM, compatível com LangChain Community
+langchain_community==0.1.7   # integração Ollama
+langchain-ollama==0.0.4      # wrapper Ollama LLM
+

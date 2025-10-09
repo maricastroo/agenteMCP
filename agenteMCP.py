@@ -1,17 +1,15 @@
 from openpyxl import load_workbook #para arquivos excel
 import webbrowser #para abrir o navegador
 from urllib.parse import quote #para formatar a URL
-import sounddevice #para reconhecimento de voz
-import vosk #para reconhecimento de voz
-import queue #para reconhecimento de voz
-import json #para reconhecimento de voz
-import os  #para manipulação de arquivos
+import sounddevice as sd # para reconhecimento de voz
+import speech_recognition as sr
 from langchain_community.llms import Ollama #para LLM
 
 #⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄
 
 ARQUIVO = "lista_compras.xlsx"
 
+#⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄
 
 #manipulação da lista de compras
 def adicionar_produto(produto):
@@ -25,7 +23,7 @@ def remover_produto(produto):
     wb = load_workbook(ARQUIVO)
     ws = wb.active
     encontrado = False
-    for row in ws.iter_rows(min_row=2): # pula o cabeçalho
+    for row in ws.iter_rows(min_row=2):  # pula o cabeçalho
         if row[0].value.lower() == produto.lower():
             ws.delete_rows(row[0].row)
             encontrado = True
@@ -39,9 +37,9 @@ def remover_produto(produto):
 def listar_produtos():
     wb = load_workbook(ARQUIVO)
     ws = wb.active
-    produtos = [row[0].value for row in ws.iter_rows(min_row=2)]
+    produtos = [row[0].value for row in ws.iter_rows(min_row=2) if row[0].value]
     if produtos:
-        print("Lista de compras: ")
+        print("Lista de compras:")
         for p in produtos:
             print("-", p)
     else:
@@ -54,51 +52,85 @@ def listar_produtos():
 def enviar_wpp():
     wb = load_workbook(ARQUIVO)
     ws = wb.active
-    produtos = [row[0].value for row in ws.iter_rows(min_row=2)]
+    
+    produtos = []
+    for row in ws.iter_rows(min_row=2):
+        valor = row[0].value
+        if valor and not str(valor).lower().startswith("aguarde"):
+            valor_limpo = str(valor).strip()
+            if valor_limpo not in produtos:
+                produtos.append(valor_limpo)
+    
     if not produtos:
         print("A lista de compras está vazia. Nada há para enviar.")
         return
-    mensagem = "Minha lista de compras:\n" + "\n".join(produtos)
+    
+    mensagem = "Lista de compras: " + ", ".join(produtos)
     url = f"https://wa.me/?text={quote(mensagem)}"
     webbrowser.open(url)
     print("Abrindo WhatsApp para enviar a lista...")
 
+
+
 #⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂
 
 # Reconhecimento de voz
+import speech_recognition as sr
+
 def ouvir_comando():
-    q = queue.Queue()
-    model = vosk.Model("vosk-model-small-pt-0.3")
+    r = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Diga um comando: ")
+        audio = r.listen(source)
+    try:
+        texto = r.recognize_google(audio, language="pt-BR")
+        print(f"Você disse: {texto}")
+        return texto
+    except sr.UnknownValueError:
+        print("Não entendi o que você disse.")
+        return ""
+    except sr.RequestError:
+        print("Erro no serviço de reconhecimento.")
+        return ""
 
-    def callback(indata, frames, time, status):
-        q.put(bytes(indata))
 
-    with sd.RawImputStream(samplerate=16000, blocksize = 8000, dtype='int16',
-                                channels=1, callback=callback):
-        print("Diga um comando (como adicionar, remover, listar, enviar ou sair):")
-        while True:
-            data = q.get()
-            if model.accept_waveform(data):
-                result = json.loads(model.result())
-                return result['text'].lower()
     
 #⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂
 
 # Interpretar comandos com LLM
 
-llm = Ollama(model="ollama3")
+llm = Ollama(model="mistral")
 
+from langchain_ollama import OllamaLLM
+import unicodedata
+
+# Inicializa o LLM Mistral
+llm = OllamaLLM(model="mistral")
+
+# Função para normalizar texto (minúsculas, remove acentos e espaços extras)
+def normalizar(texto):
+    texto = texto.lower().strip()
+    texto = unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII')
+    return texto
+
+# Função para interpretar o comando usando o LLM
 def interpretar_comando(texto):
     prompt = f"""
-    Você é um assistente que interpreta comando de voz para um agente de lista de compras.
-    Retorne apenas a ação e o produto (se aplicável) no formato: ação|produto
-    Comandos possíveis: adicionar, remover, listar, enviar
-    Exemplo: "Adicionar maçã" -> "adicionar|maçã"
-    Exemplo: "Remover banana" -> "remover|banana"
-    Comando: {texto}
+    Você é um assistente que interpreta comandos de voz para uma lista de compras.
+    Responda apenas no formato ação|produto, tudo em minúsculas, sem espaços extras e sem explicações.
+    Comandos possíveis: adicionar, remover, listar, enviar.
+    Exemplos:
+    "Adicionar maçã" -> "adicionar|maçã"
+    "Remover banana" -> "remover|banana"
+    "Listar itens" -> "listar|"
+    "Enviar lista" -> "enviar|"
+    Comando de voz: "{texto}"
     """
-    resposta = llm(prompt)
-    return resposta.strip()
+    resposta = llm.invoke(prompt)  # chama o LLM
+    resposta = normalizar(resposta)  # normaliza o texto retornado
+    resposta = resposta.strip('"').strip("'")
+    print("LLM retornou:", resposta)  # debug para ver o que o LLM entendeu
+    return resposta
 
 #⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂
 
@@ -110,13 +142,13 @@ def executar_comando(resposta):
     else:
         acao, produto = resposta, ""
     
-    if acao.lower() == "adicionar" and produto:
+    if acao == "adicionar" and produto:
         adicionar_produto(produto)
-    elif acao.lower() == "remover" and produto:
+    elif acao == "remover" and produto:
         remover_produto(produto)
-    elif acao.lower() == "listar":
+    elif acao == "listar":
         listar_produtos()
-    elif acao.lower() == "enviar":
+    elif acao == "enviar":
         enviar_wpp()
     else:
         print("Comando inválido, tente novamente.")
@@ -126,10 +158,13 @@ def executar_comando(resposta):
 # Loop principal
 while True:
     comando = ouvir_comando()
-    if comando.lower() in ["sair", "encerra", "fim", "fechar"]:
+    
+    if comando.lower() in ["sair", "encerrar", "fim", "fechar", "finalizar", "deu", "chega"]:
         print("O agente está encerrando. Até mais!")
         break
+
     if comando:
         resposta = interpretar_comando(comando)
         executar_comando(resposta)
+
 
