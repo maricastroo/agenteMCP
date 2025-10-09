@@ -1,15 +1,13 @@
-# Agente Inteligente de Lista de Compras (MCP)
+# 🧠 Agente Inteligente de Lista de Compras (MCP)
 
 Este projeto implementa um **agente inteligente baseado em MCP (Model Context Protocol)**, capaz de gerenciar uma lista de compras usando comandos de voz e salvar os produtos em uma planilha Excel. O agente também permite enviar a lista via WhatsApp usando um link pré-preenchido.
 
---
-
-## Como funciona
+## ✨Como funciona
 
 O agente escuta comandos de voz, interpreta a linguagem natural com um modelo LLM, atualiza a planilha Excel e envia a lista via WhatsApp se solicitado.
 Todas as alterações são salvas automaticamente, sem interface gráfica.
 
-## Funcionalidades do Agente
+## ✨Funcionalidades do Agente
 
 - Aceita **comandos de voz** para:
   - Adicionar produtos
@@ -22,7 +20,7 @@ Todas as alterações são salvas automaticamente, sem interface gráfica.
 
 ---
 
-## Bibliotecas utilizadas
+## ✨Bibliotecas utilizadas
 
 - **openpyxl** — manipulação de planilhas Excel  
 - **sounddevice** — entrada de voz  
@@ -34,7 +32,7 @@ Todas as alterações são salvas automaticamente, sem interface gráfica.
 
 ---
 
-## Como executar
+## ✨ Como executar
 
 1. Clone o repositório:
 ```bash
@@ -46,7 +44,7 @@ cd nome-do-repositorio
 ```bash
 pip install -r requirements.txt
 ```
-## Estrutura principal do projeto
+## ✨ Estrutura principal do projeto
 ```bash
 ├── agenteMCP.py # Script principal do agente
 ├── planilha.py # Gera a planilha lista_compras.xlsx
@@ -54,5 +52,37 @@ pip install -r requirements.txt
 ├── vosk-model-small/ # Modelo de reconhecimento de voz
 └── README.md # Este arquivo
 ```
+
+## ✨ Configuração do Ollama e Modelo Mistral
+
+O **Ollama** permite rodar modelos de linguagem grandes (LLMs) localmente, sem depender de APIs externas.  
+No projeto, usamos o modelo **Mistral** para interpretar comandos de voz.
+
+### Passo a passo
+
+#### 1. Instalação do Ollama
+
+- Baixe o instalador do site oficial: [https://ollama.com](https://ollama.com)  
+- Execute o instalador e abra o `Ollama.exe` pelo menos uma vez.
+
+#### 2. Baixando o modelo Mistral
+
+- Vá até a pasta do Ollama pelo terminal
+ ```bash
+cd "C:\Users\SeuUsuario\AppData\Local\Programs\Ollama\"
+```
+- Baixe o Mistral
+```bash
+ollama pull mistral
+```
+
+#### 3. Integração no Python
+
+```python
+from langchain_community.llms import Ollama
+llm = Ollama(model="mistral")
+
+from langchain_ollama import OllamaLLM
+llm = OllamaLLM(model="mistral")
 
 
