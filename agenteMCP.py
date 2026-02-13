@@ -13,11 +13,23 @@ ARQUIVO = "lista_compras.xlsx"
 
 #manipulação da lista de compras
 def adicionar_produto(produto):
+    produto = produto.strip()
+
+    if not produto or len(produto) < 2:
+        print("Produto inválido.")
+        return
+
+    if "|" in produto or "por favor" in produto.lower():
+        print("Produto suspeito ignorado.")
+        return
+
     wb = load_workbook(ARQUIVO)
     ws = wb.active
     ws.append([produto])
     wb.save(ARQUIVO)
-    print(f"Produto '{produto}' adicionado a lista com sucesso!")
+
+    print(f"Produto '{produto}' adicionado com sucesso!")
+
 
 def remover_produto(produto):
     wb = load_workbook(ARQUIVO)
@@ -116,20 +128,34 @@ def normalizar(texto):
 # Função para interpretar o comando usando o LLM
 def interpretar_comando(texto):
     prompt = f"""
-    Você é um assistente que interpreta comandos de voz para uma lista de compras.
-    Responda apenas no formato ação|produto, tudo em minúsculas, sem espaços extras e sem explicações.
-    Comandos possíveis: adicionar, remover, listar, enviar.
-    Exemplos:
-    "Adicionar maçã" -> "adicionar|maçã"
-    "Remover banana" -> "remover|banana"
-    "Listar itens" -> "listar|"
-    "Enviar lista" -> "enviar|"
-    Comando de voz: "{texto}"
+    Você é um sistema de classificação de comandos.
+    Responda SOMENTE no formato:
+
+    acao|produto
+
+    Sem frases.
+    Sem explicações.
+    Sem quebras de linha.
+    Sem texto adicional.
+
+    Ações possíveis: adicionar, remover, listar, enviar.
+
+    Se não houver produto, deixe vazio após o |.
+
+    Comando: {texto}
     """
-    resposta = llm.invoke(prompt)  # chama o LLM
-    resposta = normalizar(resposta)  # normaliza o texto retornado
-    resposta = resposta.strip('"').strip("'")
-    print("LLM retornou:", resposta)  # debug para ver o que o LLM entendeu
+
+    resposta = llm.invoke(prompt)
+
+    resposta = resposta.strip().lower()
+
+    # pega apenas a primeira linha (corta explicações)
+    resposta = resposta.split("\n")[0]
+
+    # remove aspas
+    resposta = resposta.replace('"', '').replace("'", "")
+
+    print("LLM retornou:", resposta)
     return resposta
 
 #⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂⠄⠄⠂⠁⠁⠂
@@ -139,6 +165,8 @@ def interpretar_comando(texto):
 def executar_comando(resposta):
     if "|" in resposta:
         acao, produto = resposta.split("|", 1)
+        acao = acao.strip()
+        produto = produto.strip()
     else:
         acao, produto = resposta, ""
     
