@@ -1,9 +1,7 @@
 # pip install -r requirements.txt
-
-openpyxl==3.1.3             # para manipular arquivos Excel
-sounddevice==0.5.5           # captura de áudio
-SpeechRecognition==3.9.0     # reconhecimento de voz
-langchain==0.2.16          # LLM, compatível com LangChain Community
-langchain-community==0.2.16  # integração Ollama
-langchain-ollama==0.1.3     # wrapper Ollama LLM
-
+ 
+openpyxl==3.1.3              # para manipular arquivos excel
+SpeechRecognition==3.9.0     # reconhecimento de voz via google speech api
+langchain==0.2.16            # framework llm
+langchain-community==0.2.16  # integração com ollama (langchain)
+langchain-ollama==0.1.3      # wrapper direto do ollama
